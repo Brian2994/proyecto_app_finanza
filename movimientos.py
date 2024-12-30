@@ -7,7 +7,7 @@ movimientos = []
 
 def agregar_movimiento(descripcion, monto):
     # Registrar el movimiento
-    fecha = datetime.date.today().strftime('%Y-%m-%d')
+    fecha = datetime.date.today().strftime('%d/%m/%Y')
     movimientos.append({'descripcion': descripcion, 'monto': monto, 'fecha': fecha})
 
 def calcular_saldo():
