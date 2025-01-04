@@ -7,7 +7,7 @@ movimientos = []
 
 # Función para agregar un movimiento
 def agregar_movimiento(descripcion, monto, tipo):
-    fecha_actual = datetime.now().strftime('%d/%m/%Y')
+    fecha_actual = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
     
     if tipo == 'Ingreso':
         # Agregar el ingreso (monto positivo)
