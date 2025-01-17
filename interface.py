@@ -44,45 +44,50 @@ def actualizar_saldo(saldo_label):
     saldo = calcular_saldo()
     saldo_label.config(text=f'Saldo: S/. {saldo:.2f}')
 
-def mostrar_historial(historial_text):
-    # Verificar si historial_text es válido antes de modificarlo
-    if not historial_text:
-        print('Error: El widget historial_text no está inicializado.')
-        return
-    
-    # Limpiar el historial antes de mostrar los nuevos movimientos
-    historial_text.config(state=tk.NORMAL)
-    historial_text.delete(1.0, tk.END) # Limpiar el contenido del historial
+def mostrar_historial(treeview):
+    # Limpiar el árbol antes de mostrar los nuevos movimientos
+    for row in treeview.get_children():
+        treeview.delete(row)
 
     # Obtener el historial de movimientos
     historial = obtener_historial()
 
     if not historial:
-        historial_text.insert(tk.END, 'No hay movimientos registrados.\n')
+        treeview.insert('', 'end', values=('No hay movimientos registrados', '', '', ''))
     else:
         for movimiento in historial:
             tipo = "Ingreso" if movimiento['tipo'] == 'Ingreso' else "Gasto"
-            historial_text.insert(tk.END, f"{movimiento['fecha']} - S/. {movimiento['monto']:.2f} - {movimiento['descripcion']} - {tipo}\n")
-
-    historial_text.config(state=tk.DISABLED)
+            # Insertar los datos en el Treeview
+            if tipo == "Ingreso":
+                treeview.insert('', 'end', values=(movimiento['fecha'], f"{movimiento['monto']:.2f}", movimiento['descripcion'], tipo), tags=('ingreso',))
+            else:
+                treeview.insert('', 'end', values=(movimiento['fecha'], f"{movimiento['monto']:.2f}", movimiento['descripcion'], tipo), tags=('gasto',))
 
 def iniciar_gui():
     # Crear la ventana principal
     root = tk.Tk()
     root.title('Gestor de Finanzas')
-    root.geometry('600x600') # Tamaño de la ventana
-    root.config(bg='#f4f4f9') # Fondo de la ventana
+    root.geometry('700x600') # Tamaño de la ventana
+    root.config(bg='#e0f7fa') # Fondo de la ventana
 
     # Configurar un tema com tkk
     style = ttk.Style(root)
-    style.configure('TButton', font=('Arial', 12), padding=10, background='#4CAF50', relief='flat')
-    style.map('TButton', background=[('active', '#45a049')])
-    style.configure('TLabel', font=('Arial', 12), padding=5, background='#f4f4f9')
-    style.configure('TEntry', font=('Arial', 12), padding=5)
+    style.configure('TButton', font=('Helvetica', 12, 'bold'), padding=10, background='#26c6da', relief='flat', foreground='#ffffff')
+    style.map('TButton', background=[('active', '#00bcd4')])
+    style.configure('TLabel', font=('Helvetica', 12), padding=5, background='#e0f7fa', foreground='#00796b')
+    style.configure('TEntry', font=('Helvetica', 12), padding=5, relief='flat')
+    style.configure('TText', font=('Helvetica', 12), padding=5)
 
     # Crear los elementos de la interfaz usando frames para mejor organización
     main_frame = ttk.Frame(root, padding='20', style='TFrame')
     main_frame.grid(row=0, column=0, sticky='nsew')
+
+    # Configurar el comportamiento de las filas y columnas para que se expandan
+    root.grid_rowconfigure(0, weight=1)
+    root.grid_columnconfigure(0, weight=1)
+
+    main_frame.grid_rowconfigure(0, weight=1)
+    main_frame.grid_columnconfigure(0, weight=1)
 
     # Frame para la descripción y monto
     input_frame = ttk.Frame(main_frame)
@@ -113,10 +118,10 @@ def iniciar_gui():
 
     # Frame para mostrar el saldo
     saldo_frame = ttk.Frame(main_frame)
-    saldo_frame.grid(row=1, column=0, pady=15, sticky='ew')
+    saldo_frame.grid(row=1, column=0, pady=15, sticky='nsew')
 
-    saldo_label = ttk.Label(saldo_frame, text='Saldo: S/. 0.00', font=('Arial', 14, 'bold'))
-    saldo_label.grid(row=0, column=0)
+    saldo_label = ttk.Label(saldo_frame, text='Saldo: S/. 0.00', font=('Helvetica', 14, 'bold'), foreground='#004d40')
+    saldo_label.grid(row=0, column=0, columnspan=3, sticky='nsew')
 
     # frame para los botones
     button_frame = ttk.Frame(main_frame)
@@ -125,23 +130,40 @@ def iniciar_gui():
     agregar_button = ttk.Button(button_frame, text='Agregar Movimiento', command=lambda: agregar_movimiento_gui(descripcion_entry, monto_entry, tipo_var, saldo_label))
     agregar_button.grid(row=0, column=0, padx=20)
 
-    historial_button = ttk.Button(button_frame, text='Mostrar Historial', command=lambda: mostrar_historial(historial_text))
+    historial_button = ttk.Button(button_frame, text='Mostrar Historial', command=lambda: mostrar_historial(treeview))
     historial_button.grid(row=0, column=1, padx=20)
 
     # Frame para el historial
     historial_frame = ttk.Frame(main_frame)
     historial_frame.grid(row=3, column=0, pady=15, sticky='nsew')
 
-    # Crear el widget Text para mostrar el historial
-    historial_text = tk.Text(historial_frame, height=10, width=40, wrap=tk.WORD, font=('Arial', 12))
-    historial_text.grid(row=0, column=0, sticky='nsew')
+    # Crear el Treeview para mostrar el historial
+    columns = ('Fecha', 'Valor', 'Descripción', 'Tipo de Movimiento')
+    treeview = ttk.Treeview(historial_frame, columns=columns, show='headings')
 
-    # Agregar barra de desplazamiento (scroll) al historial
-    scroll = ttk.Scrollbar(historial_frame, orient='vertical', command=historial_text.yview)
+    # Configurar las columnas
+    treeview.heading('Fecha', text='Fecha')
+    treeview.heading('Valor', text='Valor')
+    treeview.heading('Descripción', text='Descripción')
+    treeview.heading('Tipo de Movimiento', text='Tipo de Movimiento')
+
+    treeview.column('Fecha', width=150, anchor='w')
+    treeview.column('Valor', width=100, anchor='e')
+    treeview.column('Descripción', width=250, anchor='w')
+    treeview.column('Tipo de Movimiento', width=150, anchor='e')
+
+    treeview.grid(row=0, column=0, sticky='nsew')
+
+    # Agregar barra de desplazamiento (scroll) al Treeview
+    scroll = ttk.Scrollbar(historial_frame, orient='vertical', command=treeview.yview)
     scroll.grid(row=0, column=1, sticky='ns')
 
     # Vincular el scrollbar al Text widget
-    historial_text.config(yscrollcommand=scroll.set)
+    treeview.config(yscrollcommand=scroll.set)
+
+    # Definir colores de tags
+    treeview.tag_configure('ingreso', background='#e3f2fd') # Azul suave
+    treeview.tag_configure('gasto', background='#ffcdd2') # Rojo suave
 
     # Iniciar la interfaz gráfica
     root.mainloop()
